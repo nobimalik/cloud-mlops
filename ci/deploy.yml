@@ -1,0 +1,31 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Configure GCP
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT }}
+
+    - name: Build and push image
+      run: |
+        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT }}/mlops-api
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy mlops-api \
+          --image gcr.io/${{ secrets.GCP_PROJECT }}/mlops-api \
+          --region me-central2 \
+          --platform managed \
+          --allow-unauthenticated
